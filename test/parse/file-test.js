@@ -1,7 +1,7 @@
 var fs = require('fs');
 var wows = require('vows');
-var DOMParser = require('xmldom').DOMParser;
-var XMLSerializer = require('xmldom').XMLSerializer
+var DOMParser = require('xmldom-alpha').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer
 
 wows.describe('DOMLocator').addBatch({
 	'test.xml':function(){

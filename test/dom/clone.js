@@ -1,6 +1,6 @@
 var wows = require('vows');
-var XMLSerializer = require('xmldom').XMLSerializer;
-var DOMParser = require('xmldom').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
 
 // Create a Test Suite
 wows.describe('XML Namespace Parse').addBatch({

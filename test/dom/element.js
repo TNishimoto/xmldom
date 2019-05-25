@@ -1,7 +1,7 @@
 var wows = require('vows');
-var DOMParser = require('xmldom').DOMParser;
+var DOMParser = require('xmldom-alpha').DOMParser;
 var assert = require('assert')
-var XMLSerializer = require('xmldom').XMLSerializer;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
 // Create a Test Suite
 wows.describe('XML Namespace Parse').addBatch({
     // See: http://jsfiddle.net/bigeasy/ShcXP/1/

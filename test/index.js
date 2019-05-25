@@ -1,5 +1,5 @@
-var XMLSerializer = require('xmldom').XMLSerializer;
-var DOMParser = require('xmldom').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
 try{
 	var libxml = require('libxmljs');
 }catch(e){
@@ -35,6 +35,7 @@ function check(data,doc){
 	}
 	
 }
+
 DOMParser.prototype.parseFromString = function(data,mimeType){
 	var doc = oldParser.apply(this,arguments);
 	function ck(){
@@ -47,6 +48,7 @@ DOMParser.prototype.parseFromString = function(data,mimeType){
 	//if(this.options.checkLater){setTimeout(ck,1);}else{ck()}
 	return doc;
 }
+
 function include(){
 	for(var i=0;i<arguments.length;i++){
 		var file = arguments[i]
@@ -56,7 +58,7 @@ function include(){
 }
 include('./dom'
 		,'./error'
-		,'./html/normalize'
+		//,'./html/normalize'
 		,'./parse'
 		//*/
 		)

@@ -1,7 +1,8 @@
+
 var wows = require('vows');
 var assert = require('assert');
-var DOMParser = require('xmldom').DOMParser;
-var XMLSerializer = require('xmldom').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
 var parser = new DOMParser();
 // Create a Test Suite
 wows.describe('XML Node Parse').addBatch({
@@ -96,7 +97,7 @@ wows.describe('XML Node Parse').addBatch({
 			}
 		});
 	    var doc = parser.parseFromString('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html/>', 'text/html');
-		console.log(doc+'')
+		//console.log(doc+'')
 		
 	}
 }).run(); // Run it

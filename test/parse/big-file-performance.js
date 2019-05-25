@@ -1,7 +1,7 @@
 var wows = require('vows');
 var assert = require('assert');
-var XMLSerializer = require('xmldom').XMLSerializer;
-var DOMParser = require('xmldom').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
 var DomJS = require("dom-js").DomJS;
 try{
 	var Libxml = require('libxmljs');

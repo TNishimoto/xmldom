@@ -1,7 +1,7 @@
 var wows = require('vows');
 var assert = require('assert');
-var DOMParser = require('xmldom').DOMParser;
-var XMLSerializer = require('xmldom').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
 var parser = new DOMParser();
 // Create a Test Suite
 wows.describe('html normalizer').addBatch({

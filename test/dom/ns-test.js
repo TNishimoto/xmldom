@@ -1,9 +1,9 @@
 "use strict";
-var xdom = require('xmldom');
+var xdom = require('xmldom-alpha');
 var wows = require('vows');
 var assert = require('assert');
-var DOMParser = require('xmldom').DOMParser;
-var XMLSerializer = require('xmldom').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
 
 
 // Create a Test Suite

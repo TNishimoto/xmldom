@@ -1,5 +1,5 @@
 var wows = require('vows');
-var DOMParser = require('xmldom').DOMParser;
+var DOMParser = require('xmldom-alpha').DOMParser;
 
 // Create a Test Suite
 wows.describe('XML attrs').addBatch({

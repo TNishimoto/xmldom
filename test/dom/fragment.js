@@ -1,6 +1,6 @@
 var wows = require('vows');
-var DOMParser = require('xmldom').DOMParser;
-var XMLSerializer = require('xmldom').XMLSerializer;
+var DOMParser = require('xmldom-alpha').DOMParser;
+var XMLSerializer = require('xmldom-alpha').XMLSerializer;
 
 wows.describe('DOM DocumentFragment').addBatch({
 	// see: http://jsfiddle.net/9Wmh2/1/
