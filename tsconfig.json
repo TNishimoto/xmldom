@@ -11,7 +11,7 @@
     "files": [
         "src/dom-parser.js",
         "src/dom.js",
-        "src/entities.js",
-        "src/sax.js"
+        "src/entities.ts",
+        "src/sax.ts"
     ]
 }
