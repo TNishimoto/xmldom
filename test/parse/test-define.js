@@ -1,3 +1,3 @@
 console.log(__dirname)
-exports.XMLSerializer = require('../../dom').XMLSerializer ;
-exports.DOMParser = require('../../dom-parser').DOMParser;
+exports.XMLSerializer = require('../../dist/dom').XMLSerializer ;
+exports.DOMParser = require('../../dist/dom-parser').DOMParser;

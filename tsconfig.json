@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+    "module" : "commonjs",
+    "target": "ES2015",
+    "sourceMap": true,
+    "strictNullChecks": false,
+    "outDir" : "dist",
+    //"declaration" : true,
+    "allowJs": true
+},
+    "files": [
+        "src/dom-parser.js",
+        "src/dom.js",
+        "src/entities.js",
+        "src/sax.js"
+    ]
+}
