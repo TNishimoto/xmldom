@@ -18,12 +18,45 @@ var S_ATTR_END = 5;//attr value end and no space(quot end)
 var S_TAG_SPACE = 6;//(attr value end || tag end ) && (space offer)
 var S_TAG_CLOSE = 7;//closed el<el />
 
+type Locator = { lineNumber : number, columnNumber? : number, systemId? : string}
+type DomBuilder = { cdata : boolean, locator : Locator, startDocument : ( () => void), endDocument : ( () => void) };
+type ErrorHandler = { cdata : boolean, locator : any, warning : any, error : any, fatalError : any}
+type DefaultNSMap = { [key: string]: string; };
+type EntityMap = any;
+export class XMLReader{
+	/*
+	public parse(source : string, defaultNSMap : any, entityMap : any) : void {
+		
+		var domBuilder = this.domBuilder;
+		domBuilder.startDocument();
+		_copy(defaultNSMap, defaultNSMap = {})
+		parse(source, defaultNSMap, entityMap,
+			domBuilder, this.errorHandler);
+		domBuilder.endDocument();
+		
+	}
+	*/
+	public errorHandler : ErrorHandler;
+	public domBuilder : DomBuilder;
+	public parse(source : string, defaultNSMap : DefaultNSMap , entityMap : EntityMap ) : void {
+		var domBuilder = this.domBuilder;
+		domBuilder.startDocument();
+		_copy(defaultNSMap, defaultNSMap = {})
+		parse(source, defaultNSMap, entityMap,
+			domBuilder, this.errorHandler);
+		domBuilder.endDocument();
+
+	}
+}
+/*
 export function XMLReader() {
 
 }
+*/
 
+/*
 XMLReader.prototype = {
-	parse: function (source, defaultNSMap, entityMap) {
+	parse: function (source : string, defaultNSMap, entityMap) {
 		var domBuilder = this.domBuilder;
 		domBuilder.startDocument();
 		_copy(defaultNSMap, defaultNSMap = {})
@@ -32,7 +65,8 @@ XMLReader.prototype = {
 		domBuilder.endDocument();
 	}
 }
-function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
+*/
+function parse(source : string, defaultNSMapCopy, entityMap : EntityMap, domBuilder : any, errorHandler : ErrorHandler) {
 	function fixedFromCharCode(code) {
 		// String.prototype.fromCharCode does not supports
 		// > 2 bytes unicode chars directly
@@ -46,7 +80,7 @@ function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
 			return String.fromCharCode(code);
 		}
 	}
-	function entityReplacer(a) {
+	function entityReplacer(a : string) {
 		var k = a.slice(1, -1);
 		if (k in entityMap) {
 			return entityMap[k];
@@ -57,7 +91,7 @@ function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
 			return a;
 		}
 	}
-	function appendText(end) {//has some bugs
+	function appendText(end : number) {//has some bugs
 		if (end > start) {
 			var xt = source.substring(start, end).replace(/&#?\w+;/g, entityReplacer);
 			locator && position(start);
@@ -65,7 +99,8 @@ function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
 			start = end
 		}
 	}
-	function position(p, m?) {
+	function position(p : number) {
+		let m : RegExpExecArray;
 		while (p >= lineEnd && (m = linePattern.exec(source))) {
 			lineStart = m.index;
 			lineEnd = lineStart + m[0].length;
@@ -74,14 +109,14 @@ function parse(source, defaultNSMapCopy, entityMap, domBuilder, errorHandler) {
 		}
 		locator.columnNumber = p - lineStart + 1;
 	}
-	var lineStart = 0;
-	var lineEnd = 0;
-	var linePattern = /.*(?:\r\n?|\n)|.*$/g
-	var locator = domBuilder.locator;
+	let lineStart = 0;
+	let lineEnd = 0;
+	let linePattern = /.*(?:\r\n?|\n)|.*$/g
+	let locator : Locator | undefined = domBuilder.locator;
 
-	var parseStack = [{ currentNSMap: defaultNSMapCopy }]
-	var closeMap = {};
-	var start = 0;
+	let parseStack = [{ currentNSMap: defaultNSMapCopy }]
+	let closeMap = {};
+	let start = 0;
 	while (true) {
 		try {
 			var tagStart = source.indexOf('<', start);
@@ -546,7 +581,7 @@ function parseDCC(source, start, domBuilder, errorHandler) {//sure start with '<
 
 
 
-function parseInstruction(source, start, domBuilder) {
+function parseInstruction(source : string, start : number, domBuilder : any) : number {
 	var end = source.indexOf('?>', start);
 	if (end) {
 		var match = source.substring(start, end).match(/^<\?(\S*)\s*([\s\S]*?)\s*$/);
@@ -611,6 +646,6 @@ function split(source, start) {
 		if (match[1]) return buf;
 	}
 }
- 
+
 //export var XMLReader = XMLReader;
 

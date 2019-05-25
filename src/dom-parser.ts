@@ -2,7 +2,7 @@ export function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
 }
-DOMParser.prototype.parseFromString = function(source,mimeType){
+DOMParser.prototype.parseFromString = function(source : string,mimeType){
 	var options = this.options;
 	var sax =  new XMLReader();
 	var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
