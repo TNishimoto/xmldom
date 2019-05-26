@@ -1,7 +1,49 @@
+/*
 export function DOMParser(options){
 	this.options = options ||{locator:{}};
-	
 }
+*/
+import {NodeType, Document, Node, Element, TextRange, Attr, NamedNodeMap} from './interface';
+import {ElementAttributes} from './sax'
+//const NodeType = XML.NodeType;
+
+export {Document, Node, Element, NodeType, TextRange, Attr, NamedNodeMap};
+export class DOMParser{
+	public options : any;
+	public constructor(options){
+		this.options = options ||{locator:{}};
+	}
+	public parseFromString(source : string,mimeType) : Document {
+		var options = this.options;
+		var sax =  new XMLReader();
+		var domBuilder = options.domBuilder || new DOMHandler();//contentHandler and LexicalHandler
+		var errorHandler = options.errorHandler;
+		var locator = options.locator;
+		var defaultNSMap = options.xmlns||{};
+		var isHTML = /\/x?html?$/.test(mimeType);//mimeType.toLowerCase().indexOf('html') > -1;
+		  var entityMap = isHTML?htmlEntity.entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"};
+		if(locator){
+			domBuilder.setDocumentLocator(locator)
+		}
+		
+		sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
+		sax.domBuilder = options.domBuilder || domBuilder;
+		if(isHTML){
+			defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
+		}
+		defaultNSMap.xml = defaultNSMap.xml || 'http://www.w3.org/XML/1998/namespace';
+		if(source){
+			sax.parse(source,defaultNSMap,entityMap);
+		}else{
+			sax.errorHandler.error("invalid doc source");
+		}
+		return domBuilder.doc;
+	}
+}
+/*
+
+*/
+/*
 DOMParser.prototype.parseFromString = function(source : string,mimeType){
 	var options = this.options;
 	var sax =  new XMLReader();
@@ -28,6 +70,7 @@ DOMParser.prototype.parseFromString = function(source : string,mimeType){
 	}
 	return domBuilder.doc;
 }
+*/
 function buildErrorHandler(errorImpl,domBuilder,locator){
 	if(!errorImpl){
 		if(domBuilder instanceof DOMHandler){
@@ -52,7 +95,25 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 	build('fatalError');
 	return errorHandler;
 }
+/*
+function DOMHandler() {
+    this.cdata = false;
+}
+*/
 
+function _locator(l){
+	if(l){
+		return '\n@'+(l.systemId ||'')+'#[line:'+l.lineNumber+',col:'+l.columnNumber+']'
+	}
+}
+function position(locator,node){
+	node.lineNumber = locator.lineNumber;
+	node.columnNumber = locator.columnNumber;
+}
+/**
+ * @see org.xml.sax.ContentHandler#startDocument
+ * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
+ */ 
 //console.log('#\n\n\n\n\n\n\n####')
 /**
  * +ContentHandler+ErrorHandler
@@ -63,59 +124,59 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
  * DefaultHandler2:DefaultHandler,LexicalHandler, DeclHandler, EntityResolver2
  * @link http://www.saxproject.org/apidoc/org/xml/sax/helpers/DefaultHandler.html
  */
-function DOMHandler() {
-    this.cdata = false;
-}
-function position(locator,node){
-	node.lineNumber = locator.lineNumber;
-	node.columnNumber = locator.columnNumber;
-}
-/**
- * @see org.xml.sax.ContentHandler#startDocument
- * @link http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html
- */ 
-DOMHandler.prototype = {
-	startDocument : function() {
+
+class DOMHandler{
+	public cdata : boolean = false;
+	public doc : Document
+	public locator : any;
+	public currentElement : any;
+	public startDocument() {
     	this.doc = new DOMImplementation().createDocument(null, null, null);
     	if (this.locator) {
         	this.doc.documentURI = this.locator.systemId;
     	}
-	},
-	startElement:function(namespaceURI, localName, qName, attrs) {
-		var doc = this.doc;
-	    var el = doc.createElementNS(namespaceURI, qName||localName);
-	    var len = attrs.length;
+	}
+	public startElement(namespaceURI : string | undefined, localName : string, qName : string, attrs : ElementAttributes, startBracketInfo : TextRange ) {
+		const doc = this.doc;
+		const el = doc.createElementNS(namespaceURI, qName||localName);
+		el.startBracketRange = startBracketInfo;
+	    const len = attrs.length;
 	    appendElement(this, el);
 	    this.currentElement = el;
 	    
 		this.locator && position(this.locator,el)
 	    for (var i = 0 ; i < len; i++) {
-	        var namespaceURI = attrs.getURI(i);
-	        var value = attrs.getValue(i);
-	        var qName = attrs.getQName(i);
-			var attr = doc.createAttributeNS(namespaceURI, qName);
+	        namespaceURI = attrs.getURI(i);
+	        const value = attrs.getValue(i);
+	        qName = attrs.getQName(i);
+			const attr = doc.createAttributeNS(namespaceURI, qName);
 			this.locator &&position(attrs.getLocator(i),attr);
 			attr.value = attr.nodeValue = value;
+			attr.nameRange = attrs.getNameRange(i);
+			attr.valueRange = attrs.getValueRange(i);
+			
 			el.setAttributeNode(attr)
 	    }
-	},
-	endElement:function(namespaceURI, localName, qName) {
+	}
+	public endElement(namespaceURI, localName, qName, endBracketInfo : TextRange ) {
 		var current = this.currentElement
 		var tagName = current.tagName;
+		this.currentElement.endBracketRange = endBracketInfo;
+
 		this.currentElement = current.parentNode;
-	},
-	startPrefixMapping:function(prefix, uri) {
-	},
-	endPrefixMapping:function(prefix) {
-	},
-	processingInstruction:function(target, data) {
+	}
+	public startPrefixMapping(prefix, uri) {
+	}
+	public endPrefixMapping(prefix) {
+	}
+	public processingInstruction(target, data) {
 	    var ins = this.doc.createProcessingInstruction(target, data);
 	    this.locator && position(this.locator,ins)
 	    appendElement(this, ins);
-	},
-	ignorableWhitespace:function(ch, start, length) {
-	},
-	characters:function(chars, start, length) {
+	}
+	public ignorableWhitespace(ch, start, length) {
+	}
+	public characters(chars, start, length) {
 		chars = _toString.apply(this,arguments)
 		//console.log(chars)
 		if(chars){
@@ -132,61 +193,59 @@ DOMHandler.prototype = {
 			}
 			this.locator && position(this.locator,charNode)
 		}
-	},
-	skippedEntity:function(name) {
-	},
-	endDocument:function() {
+	}
+	public skippedEntity(name) {
+	}
+	public endDocument() {
 		this.doc.normalize();
-	},
-	setDocumentLocator:function (locator) {
+	}
+	public setDocumentLocator(locator) {
 	    if(this.locator = locator){// && !('lineNumber' in locator)){
 	    	locator.lineNumber = 0;
 	    }
-	},
+	}
 	//LexicalHandler
-	comment:function(chars, start, length) {
+	public comment(chars, start, length) {
 		chars = _toString.apply(this,arguments)
 	    var comm = this.doc.createComment(chars);
 	    this.locator && position(this.locator,comm)
 	    appendElement(this, comm);
-	},
+	}
 	
-	startCDATA:function() {
+	public startCDATA() {
 	    //used in characters() methods
 	    this.cdata = true;
-	},
-	endCDATA:function() {
+	}
+	public endCDATA() {
 	    this.cdata = false;
-	},
-	
-	startDTD:function(name, publicId, systemId) {
+	}
+	public startDTD(name, publicId, systemId) {
 		var impl = this.doc.implementation;
 	    if (impl && impl.createDocumentType) {
 	        var dt = impl.createDocumentType(name, publicId, systemId);
 	        this.locator && position(this.locator,dt)
 	        appendElement(this, dt);
 	    }
-	},
+	}
 	/**
 	 * @see org.xml.sax.ErrorHandler
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
-	warning:function(error) {
+	public warning(error) {
 		console.warn('[xmldom warning]\t'+error,_locator(this.locator));
-	},
-	error:function(error) {
+	}
+	public error(error) {
 		console.error('[xmldom error]\t'+error,_locator(this.locator));
-	},
-	fatalError:function(error) {
+	}
+	public fatalError(error) {
 		console.error('[xmldom fatalError]\t'+error,_locator(this.locator));
 	    throw error;
 	}
 }
-function _locator(l){
-	if(l){
-		return '\n@'+(l.systemId ||'')+'#[line:'+l.lineNumber+',col:'+l.columnNumber+']'
-	}
+/*
+DOMHandler.prototype = {
 }
+*/
 function _toString(chars,start,length){
 	if(typeof chars == 'string'){
 		return chars.substr(start,length)

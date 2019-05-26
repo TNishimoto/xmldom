@@ -1,3 +1,4 @@
+import {Document, TextRange } from './interface'
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
@@ -17,6 +18,7 @@ var S_ATTR_NOQUOT_VALUE = 4;//attr value(no quot value only)
 var S_ATTR_END = 5;//attr value end and no space(quot end)
 var S_TAG_SPACE = 6;//(attr value end || tag end ) && (space offer)
 var S_TAG_CLOSE = 7;//closed el<el />
+
 
 type Locator = { lineNumber : number, columnNumber? : number, systemId? : string}
 type DomBuilder = { cdata : boolean, locator : Locator, startDocument : ( () => void), endDocument : ( () => void) };
@@ -135,6 +137,7 @@ function parse(source : string, defaultNSMapCopy, entityMap : EntityMap, domBuil
 			switch (source.charAt(tagStart + 1)) {
 				case '/':
 					var end = source.indexOf('>', tagStart + 3);
+					const endBracketInfo : TextRange = {start : tagStart, end : (end+1)}
 					var tagName = source.substring(tagStart + 2, end);
 					var config: any = parseStack.pop();
 					if (end < 0) {
@@ -154,7 +157,7 @@ function parse(source : string, defaultNSMapCopy, entityMap : EntityMap, domBuil
 					var endMatch = config.tagName == tagName;
 					var endIgnoreCaseMach = endMatch || config.tagName && config.tagName.toLowerCase() == tagName.toLowerCase()
 					if (endIgnoreCaseMach) {
-						domBuilder.endElement(config.uri, config.localName, tagName);
+						domBuilder.endElement(config.uri, config.localName, tagName, endBracketInfo);
 						if (localNSMap) {
 							for (var prefix in localNSMap) {
 								domBuilder.endPrefixMapping(prefix);
@@ -193,6 +196,8 @@ function parse(source : string, defaultNSMapCopy, entityMap : EntityMap, domBuil
 							errorHandler.warning('unclosed xml attribute');
 						}
 					}
+					const startBracketInfo = {start : tagStart, end : (end+1)}
+
 					if (locator && len) {
 						var locator2 = copyLocator(locator, {});
 						//try{//attribute position fixed
@@ -203,13 +208,13 @@ function parse(source : string, defaultNSMapCopy, entityMap : EntityMap, domBuil
 						}
 						//}catch(e){console.error('@@@@@'+e)}
 						domBuilder.locator = locator2
-						if (appendElement(el, domBuilder, currentNSMap)) {
-							parseStack.push(el)
+						if (appendElement(el, domBuilder, currentNSMap, startBracketInfo)) {
+							parseStack.push(<any>el)
 						}
 						domBuilder.locator = locator;
 					} else {
-						if (appendElement(el, domBuilder, currentNSMap)) {
-							parseStack.push(el)
+						if (appendElement(el, domBuilder, currentNSMap, startBracketInfo)) {
+							parseStack.push(<any>el)
 						}
 					}
 
@@ -245,16 +250,23 @@ function copyLocator(f, t) {
  * @see #appendElement(source,elStartEnd,el,selfClosed,entityReplacer,domBuilder,parseStack);
  * @return end of the elementStartPart(end of elementEndPart for selfClosed el)
  */
-function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, errorHandler) {
-	var attrName;
-	var value;
+function parseElementStartPart(source : string, start : number, el : ElementAttributes, currentNSMap, entityReplacer, errorHandler) {
+	let attrName : string;
+	let value : string;
 	var p = ++start;
 	var s = S_TAG;//status
+	let attrNameStartPos = -1;
+	let attrNameEndPos = -1;
+	let attrValueStartPos = -1;
+	let attrValueEndPos = -1;
+
 	while (true) {
 		var c = source.charAt(p);
 		switch (c) {
 			case '=':
 				if (s === S_ATTR) {//attrName
+					attrNameStartPos = start;
+					attrNameEndPos = p;
 					attrName = source.slice(start, p);
 					s = S_EQ;
 				} else if (s === S_ATTR_SPACE) {
@@ -270,22 +282,28 @@ function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, 
 				) {//equal
 					if (s === S_ATTR) {
 						errorHandler.warning('attribute value must after "="')
+						attrNameStartPos = start;
+						attrNameEndPos = p;	
 						attrName = source.slice(start, p)
 					}
 					start = p + 1;
 					p = source.indexOf(c, start)
 					if (p > 0) {
+						attrValueStartPos = start;
+						attrValueEndPos = p;
 						value = source.slice(start, p).replace(/&#?\w+;/g, entityReplacer);
-						el.add(attrName, value, start - 1);
+						el.add(attrName, value, start - 1, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos);
 						s = S_ATTR_END;
 					} else {
 						//fatalError: no end quot match
 						throw new Error('attribute value no end \'' + c + '\' match');
 					}
 				} else if (s == S_ATTR_NOQUOT_VALUE) {
+					attrValueStartPos = start;
+					attrValueEndPos = p;
 					value = source.slice(start, p).replace(/&#?\w+;/g, entityReplacer);
 					//console.log(attrName,value,start,p)
-					el.add(attrName, value, start);
+					el.add(attrName, value, start, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos);
 					//console.dir(el)
 					errorHandler.warning('attribute "' + attrName + '" missed start quot(' + c + ')!!');
 					start = p + 1;
@@ -330,23 +348,30 @@ function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, 
 						break;//normal
 					case S_ATTR_NOQUOT_VALUE://Compatible state
 					case S_ATTR:
+						attrValueStartPos = start;
+						attrValueEndPos = p;
+	
 						value = source.slice(start, p);
 						if (value.slice(-1) === '/') {
 							el.closed = true;
+							attrValueStartPos = 0;
+							attrValueEndPos = -1;
 							value = value.slice(0, -1)
 						}
 					case S_ATTR_SPACE:
 						if (s === S_ATTR_SPACE) {
+							attrValueStartPos = attrNameStartPos;
+							attrValueEndPos = attrNameEndPos;
 							value = attrName;
 						}
 						if (s == S_ATTR_NOQUOT_VALUE) {
 							errorHandler.warning('attribute "' + value + '" missed quot(")!!');
-							el.add(attrName, value.replace(/&#?\w+;/g, entityReplacer), start)
+							el.add(attrName, value.replace(/&#?\w+;/g, entityReplacer), start, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos)
 						} else {
 							if (currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !value.match(/^(?:disabled|checked|selected)$/i)) {
 								errorHandler.warning('attribute "' + value + '" missed value!! "' + value + '" instead!!')
 							}
-							el.add(value, value, start)
+							el.add(value, value, start, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos)
 						}
 						break;
 					case S_EQ:
@@ -365,13 +390,17 @@ function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, 
 							s = S_TAG_SPACE;
 							break;
 						case S_ATTR:
+							attrNameStartPos = start;
+							attrNameEndPos = p;			
 							attrName = source.slice(start, p)
 							s = S_ATTR_SPACE;
 							break;
 						case S_ATTR_NOQUOT_VALUE:
-							var value = source.slice(start, p).replace(/&#?\w+;/g, entityReplacer);
+							attrValueStartPos = start;
+							attrValueEndPos = p;
+							value = source.slice(start, p).replace(/&#?\w+;/g, entityReplacer);
 							errorHandler.warning('attribute "' + value + '" missed quot(")!!');
-							el.add(attrName, value, start)
+							el.add(attrName, value, start, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos)
 						case S_ATTR_END:
 							s = S_TAG_SPACE;
 							break;
@@ -394,7 +423,7 @@ function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, 
 							if (currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !attrName.match(/^(?:disabled|checked|selected)$/i)) {
 								errorHandler.warning('attribute "' + attrName + '" missed value!! "' + attrName + '" instead2!!')
 							}
-							el.add(attrName, attrName, start);
+							el.add(attrName, attrName, start, attrNameStartPos, attrNameEndPos, attrValueStartPos, attrValueEndPos);
 							start = p;
 							s = S_ATTR;
 							break;
@@ -420,7 +449,7 @@ function parseElementStartPart(source, start, el, currentNSMap, entityReplacer, 
 /**
  * @return true if has new namespace define
  */
-function appendElement(el, domBuilder, currentNSMap) {
+function appendElement(el : ElementAttributes, domBuilder, currentNSMap, startBracketInfo : TextRange ) {
 	var tagName = el.tagName;
 	var localNSMap = null;
 	//var currentNSMap = parseStack[parseStack.length-1].currentNSMap;
@@ -478,7 +507,7 @@ function appendElement(el, domBuilder, currentNSMap) {
 	}
 	//no prefix element has default namespace
 	var ns = el.uri = currentNSMap[prefix || ''];
-	domBuilder.startElement(ns, localName, tagName, el);
+	domBuilder.startElement(ns, localName, tagName, el, startBracketInfo);
 	//endPrefixMapping and startPrefixMapping have not any help for dom builder
 	//localNSMap = null
 	if (el.closed) {
@@ -596,12 +625,13 @@ function parseInstruction(source : string, start : number, domBuilder : any) : n
 	return -1;
 }
 
-/**
- * @param source
- */
+
+/*
 function ElementAttributes(source?) {
 
 }
+*/
+/*
 ElementAttributes.prototype = {
 	setTagName: function (tagName) {
 		if (!tagNamePattern.test(tagName)) {
@@ -632,8 +662,46 @@ ElementAttributes.prototype = {
 	//	getType:function(uri,localName){}
 	//	getType:function(i){},
 }
+*/
+/**
+* @param source
+*/
+export class ElementAttributes {
+	public length: number = 0
+	public tagName?: string;
+	public closed?: boolean;
+	public uri?: string;
+	public prefix?: string;
+	public localName?: string;
+	public currentNSMap?: any;
+	public localNSMap?: any;
 
+	public constructor(source?: string) {
 
+	}
+
+	public setTagName(tagName) {
+		if (!tagNamePattern.test(tagName)) {
+			throw new Error('invalid tagName:' + tagName)
+		}
+		this.tagName = tagName
+	}
+	public add(qName : string, value : string, offset : number, attrNameStartPos : number, attrNameEndPos : number, attrValueStartPos : number, attrValueEndPos : number) {
+		if (!tagNamePattern.test(qName)) {
+			throw new Error('invalid attribute:' + qName)
+		}
+		this[this.length++] = { qName: qName, value: value, offset: offset, nameRange : {start : attrNameStartPos, end : attrNameEndPos}, valueRange : {start : attrValueStartPos, end : attrValueEndPos} }
+	}
+
+	public getLocalName(i) : string { return this[i].localName }
+	public getLocator(i) { return this[i].locator }
+	public getQName(i) { return this[i].qName }
+	public getURI(i) { return this[i].uri }
+	public getValue(i) : string { return this[i].value }
+	public getNameRange(i) : TextRange { return this[i].nameRange }
+	public getValueRange(i) : TextRange { return this[i].valueRange }
+
+}
 
 function split(source, start) {
 	var match;

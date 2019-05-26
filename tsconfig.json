@@ -5,10 +5,11 @@
     "sourceMap": true,
     "strictNullChecks": false,
     "outDir" : "dist",
-    //"declaration" : true,
-    "allowJs": true
+    "declaration" : true
+    //"allowJs": true
 },
     "files": [
+        "src/interface.ts",
         "src/dom-parser.ts",
         "src/dom.ts",
         "src/entities.ts",

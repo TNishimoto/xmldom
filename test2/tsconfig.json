@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+    "module" : "commonjs",
+    "target": "ES2015",
+    "sourceMap": false,
+    "strictNullChecks": true,
+    "baseUrl": "C:/Users/noname/AppData/Roaming/npm/node_modules/"
+    
+},
+    "files": [
+        "bracketPosTest.ts"
+    ]
+}
